@@ -7,11 +7,11 @@ np.random.seed(42)
 
 #Streams contex
 streams = ['Physical Science', 'Bio Science', 'Commerce', 'Arts', 'Technology', 'English', 'Sinhala']
-stream_weights = [0.35,0.25,0.20,0.10,0.10, 0.20,0.05]
+stream_weights = [0.30, 0.20, 0.20, 0.10, 0.10, 0.07, 0.03]
 
 # Location aspects 
 districts = ['Ratnapura','Colombo', 'Gampaha',  'Kandy', 'Jaffna','Galle', 'UpCountry', 'RemoteArea' ]
-district_weight = [0.4,0.2,0.2,0.15,0.3,0.15,0.2,0.3]
+district_weight = [0.10,0.2,0.2,0.15,0.1,0.15,0.06,0.04]
 
 #Generate Base Data
 data = pd.DataFrame({
@@ -33,7 +33,7 @@ data ['english_fluency'] = data['district'].apply(get_englishfleency)
 # Normally Sri lanka have lots tution
 data['tuition_hours_weekly'] = np.random.randint(0,16,NUM_STUDENTS)
 #infastructure 
-data['commute_fatigue'] = np.random(0.0,0.5,NUM_STUDENTS)
+data['commute_fatigue'] = np.random.uniform(0.0,0.5,NUM_STUDENTS)
 
 #how effected by tution 
 base_score = np.random.normal(60,15,NUM_STUDENTS)
