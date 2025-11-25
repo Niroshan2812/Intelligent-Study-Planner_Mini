@@ -13,8 +13,8 @@ public class StudySession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long std_session_id;
 
-    private LocalDateTime start_time;
-    private LocalDateTime end_time;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
     private String title;
 
