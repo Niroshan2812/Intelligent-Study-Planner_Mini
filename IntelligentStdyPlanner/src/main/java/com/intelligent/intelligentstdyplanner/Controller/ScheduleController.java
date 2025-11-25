@@ -21,6 +21,7 @@ public class ScheduleController {
     public ResponseEntity<List<StudySession>> generateSchedule(@PathVariable Long studentId) {
         try {
             List<StudySession> sessions = scheduleService.generateSchedule(studentId);
+            System.out.println(sessions);
             return ResponseEntity.ok(sessions);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

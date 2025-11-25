@@ -11,7 +11,7 @@ This represents the student Free timeslots
  */
 @Entity
 @Data
-@Table(name="availability")
+@Table(name = "availability")
 public class Availability {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,4 +22,8 @@ public class Availability {
 
     private LocalTime startTime;
     private LocalTime endTime;
+
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    private Student student;
 }

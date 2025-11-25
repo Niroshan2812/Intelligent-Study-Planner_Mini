@@ -41,7 +41,7 @@ public class ScheduleService {
                 .filter(e -> e.getSubject().getStudent() != null
                         && e.getSubject().getStudent().getId().equals(studentId))
                 .toList();
-        List<Availability> availabilities = availabilityRepository.findAll();
+        List<Availability> availabilities = availabilityRepository.findByStudentId(studentId);
         List<StudySession> newSessions = new ArrayList<>();
 
         for (Exam exam : upcomingExams) {
