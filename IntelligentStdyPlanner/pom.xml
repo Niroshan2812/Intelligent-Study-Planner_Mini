@@ -66,6 +66,11 @@
             <artifactId>tribuo-regression-sgd</artifactId>
             <version>4.3.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.20.0</version>
+        </dependency>
           <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
