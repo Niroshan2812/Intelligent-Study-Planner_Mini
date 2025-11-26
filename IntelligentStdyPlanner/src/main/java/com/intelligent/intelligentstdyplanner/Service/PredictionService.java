@@ -9,11 +9,17 @@ import org.springframework.stereotype.Service;
 import java.nio.DoubleBuffer;
 import java.nio.LongBuffer;
 import java.util.Map;
-
+/*
+In here,
+Use per train model call- load training model into this
+ */
 @Service
 public class PredictionService {
         private OrtSession session;
         private OrtEnvironment environment;
+
+       // This run application start -
+    // loading model then create OrtSession - so can respond immediately witout reloading file everytime.
 
         @PostConstruct
         public void init() {
@@ -42,7 +48,7 @@ public class PredictionService {
                         OnnxTensor districtTensor = OnnxTensor.createTensor(environment, new String[] { district },
                                         new long[] { 1, 1 });
 
-                        // Numerical inputs
+                        // ---------------------- Numerical inputs
                         // difficulty_level: int64
                         // current_score: float (but model expects double)
                         // english_fluency: int64
