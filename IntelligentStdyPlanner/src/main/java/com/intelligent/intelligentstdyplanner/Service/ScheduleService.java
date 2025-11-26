@@ -32,6 +32,7 @@ public class ScheduleService {
     }
 
     public List<StudySession> generateSchedule(Long studentId) {
+        System.out.println("Generating schedule for student: " + studentId);
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
@@ -41,7 +42,12 @@ public class ScheduleService {
                 .filter(e -> e.getSubject().getStudent() != null
                         && e.getSubject().getStudent().getId().equals(studentId))
                 .toList();
+
+        System.out.println("Found " + upcomingExams.size() + " upcoming exams for student " + studentId);
+
         List<Availability> availabilities = availabilityRepository.findByStudentId(studentId);
+        System.out.println("Found " + availabilities.size() + " availability slots for student " + studentId);
+
         List<StudySession> newSessions = new ArrayList<>();
 
         for (Exam exam : upcomingExams) {
@@ -55,21 +61,40 @@ public class ScheduleService {
                     student.getTuitionHoursWeekly(),
                     student.getCommuteFatigue());
 
+            System.out.println("Predicted hours for subject " + subject.getName() + ": " + predictedHours);
+
             // Simple allocation logic: distribute hours across available slots
             // This is a simplified greedy approach
             float hoursAllocated = 0;
             LocalDate currentDate = LocalDate.now();
 
-            while (hoursAllocated < predictedHours && currentDate.isBefore(exam.getDeadline().toLocalDate())) {
+            // FIX: Changed isBefore to !isAfter to include the deadline day
+            while (hoursAllocated < predictedHours && !currentDate.isAfter(exam.getDeadline().toLocalDate())) {
+                boolean allocatedInDay = false;
                 for (Availability slot : availabilities) {
                     if (slot.getDayOfWeek() == currentDate.getDayOfWeek()) {
                         LocalDateTime start = LocalDateTime.of(currentDate, slot.getStartTime());
                         LocalDateTime end = LocalDateTime.of(currentDate, slot.getEndTime());
 
+                        // If today is the deadline, ensure we don't schedule past the deadline time?
+                        // For now, assuming deadline is end of day or specific time.
+                        // If specific time, we should cap 'end' to exam.getDeadline() if on same day.
+                        if (currentDate.isEqual(exam.getDeadline().toLocalDate())) {
+                            if (start.isAfter(exam.getDeadline())) {
+                                continue; // Slot is after exam
+                            }
+                            if (end.isAfter(exam.getDeadline())) {
+                                end = exam.getDeadline(); // Cap slot at exam time
+                            }
+                        }
+
                         // Check for clashes with existing sessions (including newly created ones)
                         if (isSlotAvailable(start, end, newSessions)) {
                             // Cap session duration to remaining needed hours or slot duration
                             long slotDurationMinutes = java.time.Duration.between(start, end).toMinutes();
+                            if (slotDurationMinutes <= 0)
+                                continue;
+
                             float slotDurationHours = slotDurationMinutes / 60.0f;
 
                             float hoursToBook = Math.min(predictedHours - hoursAllocated, slotDurationHours);
@@ -85,14 +110,23 @@ public class ScheduleService {
 
                                 newSessions.add(session);
                                 hoursAllocated += hoursToBook;
+                                allocatedInDay = true;
+                                System.out.println("Allocated " + hoursToBook + " hours for " + subject.getName()
+                                        + " on " + start);
 
                                 if (hoursAllocated >= predictedHours)
                                     break;
                             }
+                        } else {
+                            // System.out.println("Slot not available: " + start + " - " + end);
                         }
                     }
                 }
                 currentDate = currentDate.plusDays(1);
+            }
+            if (hoursAllocated < predictedHours) {
+                System.out.println("Warning: Could not allocate all needed hours for " + subject.getName()
+                        + ". Allocated: " + hoursAllocated + "/" + predictedHours);
             }
         }
 

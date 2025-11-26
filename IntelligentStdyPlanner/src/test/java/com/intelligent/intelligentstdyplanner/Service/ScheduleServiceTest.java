@@ -80,4 +80,46 @@ class ScheduleServiceTest {
         assertEquals("Study Math", sessions.get(0).getTitle());
         verify(predictionService).predictStudyHours(any(), any(), eq(5.0f), eq(60.0f), eq(3.0f), eq(10.0f), eq(2.0f));
     }
+
+    @Test
+    void generateSchedule_shouldCreateSessions_whenDeadlineIsToday() {
+        // Arrange
+        Long studentId = 1L;
+        Student student = new Student();
+        student.setId(studentId);
+        student.setEnglishFluency(3.0f);
+        student.setTuitionHoursWeekly(10.0f);
+        student.setCommuteFatigue(2.0f);
+
+        Subject subject = new Subject();
+        subject.setStudent(student);
+        subject.setDifficaltyLevel(5);
+        subject.setCurrentScore(60.0);
+        subject.setName("Science");
+
+        Exam exam = new Exam();
+        exam.setSubject(subject);
+        // Deadline is today at 23:59
+        exam.setDeadline(LocalDateTime.now().withHour(23).withMinute(59));
+
+        Availability availability = new Availability();
+        availability.setDayOfWeek(LocalDateTime.now().getDayOfWeek());
+        availability.setStartTime(LocalTime.of(10, 0));
+        availability.setEndTime(LocalTime.of(12, 0));
+
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(examRepository.findByDeadlineAfter(any())).thenReturn(List.of(exam));
+        when(availabilityRepository.findByStudentId(studentId)).thenReturn(List.of(availability));
+        when(predictionService.predictStudyHours(any(), any(), anyFloat(), anyFloat(), anyFloat(), anyFloat(),
+                anyFloat()))
+                .thenReturn(1.5f);
+        when(studySessionRepository.saveAll(any())).thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        List<StudySession> sessions = scheduleService.generateSchedule(studentId);
+
+        // Assert
+        assertEquals(1, sessions.size(), "Should create a session even if deadline is today");
+        assertEquals("Study Science", sessions.get(0).getTitle());
+    }
 }
