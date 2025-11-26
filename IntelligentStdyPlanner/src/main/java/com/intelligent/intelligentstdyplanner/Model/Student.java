@@ -17,4 +17,7 @@ public class Student {
     private float englishFluency; // 1.0 to 5.0
     private float tuitionHoursWeekly;
     private float commuteFatigue; // 1.0 to 5.0
+
+    private String stream;
+    private String district;
 }

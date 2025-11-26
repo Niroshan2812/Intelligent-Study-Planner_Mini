@@ -47,6 +47,8 @@ public class ScheduleService {
         for (Exam exam : upcomingExams) {
             Subject subject = exam.getSubject();
             float predictedHours = predictionService.predictStudyHours(
+                    student.getStream(),
+                    student.getDistrict(),
                     subject.getDifficaltyLevel(),
                     (float) subject.getCurrentScore(),
                     student.getEnglishFluency(),

@@ -23,12 +23,14 @@ public class StudentSearvice {
         student.setCommuteFatigue(studentDTO.getCommuteFatigue());
         student.setTuitionHoursWeekly(studentDTO.getTuitionHoursWeekly());
         student.setEnglishFluency(studentDTO.getEnglishFluency());
+        student.setStream(studentDTO.getStream());
+        student.setDistrict(studentDTO.getDistrict());
 
         Student savedStudent = studentRepository.save(student);
         return convertDTO(savedStudent);
     }
 
-    public List<StudentDTO> getAllStudents(){
+    public List<StudentDTO> getAllStudents() {
         return studentRepository.findAll()
                 .stream()
                 .map(this::convertDTO)
@@ -41,6 +43,8 @@ public class StudentSearvice {
         studentDTO.setTuitionHoursWeekly(student.getTuitionHoursWeekly());
         studentDTO.setCommuteFatigue(student.getCommuteFatigue());
         studentDTO.setEnglishFluency(student.getEnglishFluency());
+        studentDTO.setStream(student.getStream());
+        studentDTO.setDistrict(student.getDistrict());
         return studentDTO;
     }
 }

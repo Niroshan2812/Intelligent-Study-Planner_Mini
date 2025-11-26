@@ -9,4 +9,6 @@ public class StudentDTO {
     private float englishFluency;
     private float tuitionHoursWeekly;
     private float commuteFatigue;
+    private String stream;
+    private String district;
 }

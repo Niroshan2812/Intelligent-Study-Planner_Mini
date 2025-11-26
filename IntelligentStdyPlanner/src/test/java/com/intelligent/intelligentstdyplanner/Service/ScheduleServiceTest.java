@@ -66,8 +66,9 @@ class ScheduleServiceTest {
 
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(examRepository.findByDeadlineAfter(any())).thenReturn(List.of(exam));
-        when(availabilityRepository.findAll()).thenReturn(List.of(availability));
-        when(predictionService.predictStudyHours(anyFloat(), anyFloat(), anyFloat(), anyFloat(), anyFloat()))
+        when(availabilityRepository.findByStudentId(studentId)).thenReturn(List.of(availability));
+        when(predictionService.predictStudyHours(any(), any(), anyFloat(), anyFloat(), anyFloat(), anyFloat(),
+                anyFloat()))
                 .thenReturn(1.5f);
         when(studySessionRepository.saveAll(any())).thenAnswer(i -> i.getArguments()[0]);
 
@@ -77,6 +78,6 @@ class ScheduleServiceTest {
         // Assert
         assertEquals(1, sessions.size());
         assertEquals("Study Math", sessions.get(0).getTitle());
-        verify(predictionService).predictStudyHours(5.0f, 60.0f, 3.0f, 10.0f, 2.0f);
+        verify(predictionService).predictStudyHours(any(), any(), eq(5.0f), eq(60.0f), eq(3.0f), eq(10.0f), eq(2.0f));
     }
 }
