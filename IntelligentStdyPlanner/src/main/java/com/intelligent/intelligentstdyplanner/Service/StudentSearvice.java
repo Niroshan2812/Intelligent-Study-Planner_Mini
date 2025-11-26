@@ -39,6 +39,7 @@ public class StudentSearvice {
 
     private StudentDTO convertDTO(Student student) {
         StudentDTO studentDTO = new StudentDTO();
+        studentDTO.setId(student.getId());
         studentDTO.setName(student.getName());
         studentDTO.setTuitionHoursWeekly(student.getTuitionHoursWeekly());
         studentDTO.setCommuteFatigue(student.getCommuteFatigue());

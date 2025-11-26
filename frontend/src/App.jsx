@@ -17,10 +17,6 @@ function App() {
     return <Navigate to="/" replace />;
   }
 
-  if (studentId && isPublicPage) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={<StudentRegistration />} />
