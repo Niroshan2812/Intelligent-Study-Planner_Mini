@@ -16,7 +16,7 @@ try:
 except FileNotFoundError:
     data = pd.read_csv('ModelTraining/sri_lankan_student_data.csv')
 
-# Define features
+# for define features
 categorical_features = ['stream', 'district']
 numerical_features = ['difficulty_level', 'current_score', 'english_fluency', 'tuition_hours_weekly', 'commute_fatigue']
 target_column = 'hours_needed'
@@ -25,7 +25,6 @@ X = data[categorical_features + numerical_features]
 y = data[target_column]
 
 # Create Preprocessing Pipeline
-# OneHotEncoder for categorical, passthrough for numerical
 preprocessor = ColumnTransformer(
     transformers=[
         ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical_features),
@@ -34,7 +33,7 @@ preprocessor = ColumnTransformer(
 )
 
 # Create the full pipeline
-# Note: We use the sklearn wrapper for XGBoost to make it compatible with sklearn Pipeline
+# In here it use the sklearn wrapper for XGBoost to make it compatible with sklearn Pipeline
 model = Pipeline(steps=[
     ('preprocessor', preprocessor),
     ('regressor', xgb.XGBRegressor(n_estimators=100, max_depth=4, base_score=0.5))
@@ -44,8 +43,7 @@ model = Pipeline(steps=[
 print("Training model...")
 model.fit(X, y)
 print("Training Complete")
-
-# Evaluate (Simple RMSE on training data for sanity check)
+# Evaluate 
 from sklearn.metrics import mean_squared_error, r2_score
 predictions = model.predict(X)
 rmse = np.sqrt(mean_squared_error(y, predictions))

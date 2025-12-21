@@ -12,6 +12,7 @@ const api = axios.create({
 export const studentService = {
     create: (data) => api.post('/students', data),
     getAll: () => api.get('/students'),
+    getById: (id) => api.get(`/students/${id}`),
 };
 
 export const subjectService = {

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.nio.DoubleBuffer;
 import java.nio.LongBuffer;
 import java.util.Map;
+
 /*
 In here,
 Use per train model call- load training model into this
@@ -18,8 +19,9 @@ public class PredictionService {
         private OrtSession session;
         private OrtEnvironment environment;
 
-       // This run application start -
-    // loading model then create OrtSession - so can respond immediately witout reloading file everytime.
+        // This run application start -
+        // loading model then create OrtSession - so can respond immediately witout
+        // reloading file everytime.
 
         @PostConstruct
         public void init() {
@@ -40,7 +42,7 @@ public class PredictionService {
         }
 
         public float predictStudyHours(String stream, String district, float difficulty, float score, float fluency,
-                        float tutuion, float fatigue) {
+                        float tutuion, float fatigue, float avgSleepHours, String learningStyle) {
                 try {
                         // Prepare inputs
                         OnnxTensor streamTensor = OnnxTensor.createTensor(environment, new String[] { stream },
@@ -79,12 +81,35 @@ public class PredictionService {
                                         "tuition_hours_weekly", tuitionTensor,
                                         "commute_fatigue", fatigueTensor);
 
+                        float basePrediction;
                         try (OrtSession.Result result = session.run(inputs)) {
                                 // Extract Result
                                 // Output is likely a float tensor
                                 float[][] output = (float[][]) result.get(0).getValue();
-                                return output[0][0];
+                                basePrediction = output[0][0];
                         }
+
+                        // --- Post-Processing Heuristics ---
+                        float multiplier = 1.0f;
+
+                        // Sleep Logic: < 6h -> +20% (Low efficiency), > 8h -> -10% (High efficiency)
+                        if (avgSleepHours > 0) { // check if set
+                                if (avgSleepHours < 6.0f) {
+                                        multiplier += 0.2f;
+                                        System.out.println("Adjusting prediction: Sleep penalty applied (Low Sleep: "
+                                                        + avgSleepHours + ")");
+                                } else if (avgSleepHours > 8.0f) {
+                                        multiplier -= 0.1f;
+                                        System.out.println("Adjusting prediction: Sleep bonus applied (Good Sleep: "
+                                                        + avgSleepHours + ")");
+                                }
+                        }
+
+                        // Learning Style Logic (Future placeholder)
+                        // if (learningStyle.equalsIgnoreCase("Visual")) { ... }
+
+                        return basePrediction * multiplier;
+
                 } catch (Exception e) {
                         System.out.println("ONNX Prediction Error: " + e.getMessage());
                         e.printStackTrace();

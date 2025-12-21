@@ -16,7 +16,8 @@ public class AITestRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         System.out.println("-------------------------------------------");
 
-        float hpurs = predictionService.predictStudyHours("Bio Science", "Colombo", 8.0f, 40.0f, 3.0f, 0.0f, 9.0f);
+        float hpurs = predictionService.predictStudyHours("Bio Science", "Colombo", 8.0f, 40.0f, 3.0f, 0.0f, 9.0f, 0.0f,
+                "Visual");
         System.out.println("Ai predition studnet needs: " + hpurs);
 
     }

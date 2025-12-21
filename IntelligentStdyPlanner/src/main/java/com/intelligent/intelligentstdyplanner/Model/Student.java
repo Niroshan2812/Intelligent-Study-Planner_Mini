@@ -20,4 +20,8 @@ public class Student {
 
     private String stream;
     private String district;
+
+    // New AI Factors
+    private float averageSleepHours;
+    private String learningStyle; // e.g., Visual, Auditory, Text
 }

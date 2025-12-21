@@ -18,7 +18,8 @@ public class PredictionServiceIntegrationTest {
         PredictionService service = new PredictionService();
         service.init();
 
-        float hours = service.predictStudyHours("Bio Science", "Colombo", 8.0f, 40.0f, 3.0f, 0.0f, 9.0f);
+        float hours = service.predictStudyHours("Bio Science", "Colombo", 8.0f, 40.0f, 3.0f, 0.0f, 9.0f, 7.0f,
+                "Visual");
         System.out.println("Predicted hours: " + hours);
 
         assertTrue(hours > 0, "Predicted hours should be greater than 0");

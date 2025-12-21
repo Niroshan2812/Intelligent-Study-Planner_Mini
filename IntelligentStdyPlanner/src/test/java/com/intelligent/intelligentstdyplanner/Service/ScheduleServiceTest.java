@@ -71,7 +71,7 @@ class ScheduleServiceTest {
         when(examRepository.findByDeadlineAfter(any())).thenReturn(List.of(exam));
         when(availabilityRepository.findByStudentId(studentId)).thenReturn(List.of(availability));
         when(predictionService.predictStudyHours(any(), any(), anyFloat(), anyFloat(), anyFloat(), anyFloat(),
-                anyFloat()))
+                anyFloat(), anyFloat(), any()))
                 .thenReturn(1.5f);
 
         StudySession mockSession = new StudySession();
@@ -85,7 +85,8 @@ class ScheduleServiceTest {
         // Assert
         assertEquals(1, sessions.size());
         assertEquals("Study Math", sessions.get(0).getTitle());
-        verify(predictionService).predictStudyHours(any(), any(), eq(5.0f), eq(60.0f), eq(3.0f), eq(10.0f), eq(2.0f));
+        verify(predictionService).predictStudyHours(any(), any(), eq(5.0f), eq(60.0f), eq(3.0f), eq(10.0f), eq(2.0f),
+                eq(0.0f), any());
         verify(constraintService).generateSchedule(any(), any(), any());
     }
 }

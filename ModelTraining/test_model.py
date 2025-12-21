@@ -35,8 +35,6 @@ def test_model(model_path):
         feed_dict = {}
         for i in sess.get_inputs():
             if i.name in inputs:
-                # Cast to correct type if necessary
-                # ONNX Runtime is strict about types
                 target_type = i.type
                 data = inputs[i.name]
                 

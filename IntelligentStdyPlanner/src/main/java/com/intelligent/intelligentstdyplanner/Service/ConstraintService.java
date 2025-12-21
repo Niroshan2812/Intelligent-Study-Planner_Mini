@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 /*
     In here Using Choco-solver library ti mathematically figure out the best time study session
     Assumptions -
@@ -33,7 +34,6 @@ public class ConstraintService {
             Map<Long, Float> predictedHours) {
         Model model = new Model("Study Schedule");
 
-
         // Start from now - round is set as 30 min
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime scheduleStart = roundToNextSlot(now);
@@ -48,14 +48,14 @@ public class ConstraintService {
         long totalSlots = Duration.between(scheduleStart, maxDeadline).toMinutes() / SLOT_MINUTES;
         if (totalSlots <= 0)
             return Collections.emptyList();
-        //System.out.println("Total slots: " + totalSlots);
+        // System.out.println("Total slots: " + totalSlots);
         // Cap horizon to avoid performance issues (e.g., 30 days)
         int horizon = (int) Math.min(totalSlots, 30 * 24 * 2);
 
         // 2. Pre-process Availability
         /*
-        Map availability to valid start
-        A slot index 'i' corresponds to time: scheduleStart + i * 30mins
+         * Map availability to valid start
+         * A slot index 'i' corresponds to time: scheduleStart + i * 30mins
          */
         BitSet availableSlots = new BitSet(horizon);
 
@@ -85,31 +85,36 @@ public class ConstraintService {
 
             int chunkIndex = 0;
             while (remainingSlots > 0) {
-                int duration = Math.min(remainingSlots, maxChunkSize);
+                int studyDuration = Math.min(remainingSlots, maxChunkSize);
+                // Add 1 slot (30 mins) for break/buffer
+                int totalDuration = studyDuration + 1;
 
                 // Create Task Variable
-                // set start time domain-  [0, horizon - duration]
-                IntVar start = model.intVar("start_" + subject.getName() + "_" + chunkIndex, 0, horizon - duration);
+                // set start time domain- [0, horizon - totalDuration]
+                IntVar start = model.intVar("start_" + subject.getName() + "_" + chunkIndex, 0,
+                        horizon - totalDuration);
                 IntVar end = model.intVar("end_" + subject.getName() + "_" + chunkIndex, 0, horizon);
-                IntVar dur = model.intVar(duration); // Fixed duration
+                IntVar dur = model.intVar(totalDuration); // Fixed duration with break
 
                 Task task = new Task(start, dur, end);
                 chocoTasks.add(task);
                 taskSubjects.add(subject);
 
-
-                int[] validStarts = getValidStartIndices(availableSlots, horizon, duration);
+                int[] validStarts = getValidStartIndices(availableSlots, horizon, totalDuration);
                 if (validStarts.length == 0) {
                     System.out.println("No valid slots found for " + subject.getName() + " chunk " + chunkIndex);
+                    // Critical: If we can't schedule a required chunk, we probably should abort or
+                    // log error
+                    // For now, proceeding but this task implies constraint failure if not solvable
                 } else {
                     model.member(start, validStarts).post();
                 }
 
-                //Task must be before deadline
+                // Task must be before deadline
                 long deadlineSlots = Duration.between(scheduleStart, exam.getDeadline()).toMinutes() / SLOT_MINUTES;
                 model.arithm(end, "<=", (int) deadlineSlots).post();
 
-                remainingSlots -= duration;
+                remainingSlots -= studyDuration;
                 chunkIndex++;
             }
         }
@@ -138,10 +143,13 @@ public class ConstraintService {
                 Subject s = taskSubjects.get(i);
 
                 int startSlot = t.getStart().getValue();
-                int durationSlots = t.getDuration().getValue();
+                // The task duration includes the break, so we subtract 1 slot for the actual
+                // study session
+                int totalDurationSlots = t.getDuration().getValue();
+                int studyDurationSlots = totalDurationSlots - 1;
 
                 LocalDateTime start = scheduleStart.plusMinutes((long) startSlot * SLOT_MINUTES);
-                LocalDateTime end = start.plusMinutes((long) durationSlots * SLOT_MINUTES);
+                LocalDateTime end = start.plusMinutes((long) studyDurationSlots * SLOT_MINUTES);
 
                 StudySession session = new StudySession();
                 session.setSubject(s);
