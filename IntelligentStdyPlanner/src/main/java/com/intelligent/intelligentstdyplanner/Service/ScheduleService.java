@@ -34,7 +34,7 @@ public class ScheduleService {
                 this.constraintService = constraintService;
         }
 
-        public List<StudySession> generateSchedule(Long studentId) {
+        public com.intelligent.intelligentstdyplanner.DTO.ScheduleResponseDTO generateSchedule(Long studentId) {
                 System.out.println("Generating schedule for student: " + studentId);
                 Student student = studentRepository.findById(studentId)
                                 .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -51,7 +51,7 @@ public class ScheduleService {
                 List<Availability> availabilities = availabilityRepository.findByStudentId(studentId);
                 System.out.println("Found " + availabilities.size() + " availability slots for student " + studentId);
 
-                //Predict hours for all exams
+                // Predict hours for all exams
                 Map<Long, Float> predictedHoursMap = new HashMap<>();
                 for (Exam exam : upcomingExams) {
                         Subject subject = exam.getSubject();
@@ -70,12 +70,25 @@ public class ScheduleService {
                         predictedHoursMap.put(subject.getSubject_id(), predictedHours);
                 }
 
-                //Use Choco-Solver to generate schedule
+                // Use Choco-Solver to generate schedule
                 List<StudySession> newSessions = constraintService.generateSchedule(upcomingExams, availabilities,
                                 predictedHoursMap);
 
                 System.out.println("Generated " + newSessions.size() + " sessions using Choco-Solver");
 
-                return studySessionRepository.saveAll(newSessions);
+                List<StudySession> savedSessions = studySessionRepository.saveAll(newSessions);
+
+                // Prepare Response DTO
+                com.intelligent.intelligentstdyplanner.DTO.ScheduleResponseDTO responseDTO = new com.intelligent.intelligentstdyplanner.DTO.ScheduleResponseDTO();
+                responseDTO.setSessions(savedSessions);
+
+                Map<String, Float> predictedHoursByName = new HashMap<>();
+                for (Exam exam : upcomingExams) {
+                        predictedHoursByName.put(exam.getSubject().getName(),
+                                        predictedHoursMap.get(exam.getSubject().getSubject_id()));
+                }
+                responseDTO.setPredictedHoursPerSubject(predictedHoursByName);
+
+                return responseDTO;
         }
 }

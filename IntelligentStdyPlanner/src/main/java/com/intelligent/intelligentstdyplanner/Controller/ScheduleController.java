@@ -18,11 +18,13 @@ public class ScheduleController {
     }
 
     @PostMapping("/generate/{studentId}")
-    public ResponseEntity<List<StudySession>> generateSchedule(@PathVariable Long studentId) {
+    public ResponseEntity<com.intelligent.intelligentstdyplanner.DTO.ScheduleResponseDTO> generateSchedule(
+            @PathVariable Long studentId) {
         try {
-            List<StudySession> sessions = scheduleService.generateSchedule(studentId);
-            System.out.println(sessions);
-            return ResponseEntity.ok(sessions);
+            com.intelligent.intelligentstdyplanner.DTO.ScheduleResponseDTO response = scheduleService
+                    .generateSchedule(studentId);
+            System.out.println(response);
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }

@@ -29,6 +29,8 @@ const Schedule = () => {
     const [isdataModalOpen, setIsModalOpen] = useState(false);
     const [feedbackData, setFeedbackData] = useState({ actualDuration: '', comprehension: 5 });
 
+    const [predictions, setPredictions] = useState({});
+
     // Hardcoded logic for demo purposes if not found in student
     // Assuming user might not have set sleep explicitly, default to 7 hours
     // Assuming wake up time at 06:00
@@ -41,7 +43,8 @@ const Schedule = () => {
         try {
             // 1. Generate/Fetch Study Schedule
             const schedResponse = await scheduleService.generate(studentId);
-            setSchedule(schedResponse.data || []);
+            setSchedule(schedResponse.data.sessions || []);
+            setPredictions(schedResponse.data.predictedHoursPerSubject || {});
 
             // 2. Fetch Availability
             const availResponse = await availabilityService.getByStudent(studentId);
@@ -277,6 +280,26 @@ const Schedule = () => {
                     {loading ? 'Generating...' : 'Generate New Schedule'}
                 </button>
             </div>
+
+            {Object.keys(predictions).length > 0 && (
+                <div className={styles.predictionsContainer} style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {Object.entries(predictions).map(([subject, hours]) => (
+                        <div key={subject} className={styles.predictionCard} style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            padding: '0.8rem 1.2rem',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center'
+                        }}>
+                            <span style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '0.2rem' }}>{subject}</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff' }}>{hours.toFixed(1)} Hours</span>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {loading && <div className={styles.loading}>Generating your personalized plan...</div>}
 
