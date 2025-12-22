@@ -21,4 +21,9 @@ public class StudySession {
     @ManyToOne
     @JoinColumn(name = "subject_id")
     private Subject subject;
+
+    // --- Feedback / Learning Fields ---
+    private boolean isCompleted; // Did the student finish it?
+    private int actualDurationMinutes; // How long did it actually take?
+    private int comprehensionRating; // 1-5 scale (1=Confused, 5=Mastered)
 }

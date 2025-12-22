@@ -18,6 +18,9 @@ public class Subject {
 
     private double currentScore;
 
+    @Enumerated(EnumType.STRING)
+    private TimePreference preferredTimeOfDay = TimePreference.ANY;
+
     @ManyToOne
     @JoinColumn(name = "student_id")
     private Student student;

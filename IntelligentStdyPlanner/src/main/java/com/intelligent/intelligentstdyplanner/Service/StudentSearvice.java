@@ -37,6 +37,12 @@ public class StudentSearvice {
                 .collect(Collectors.toList());
     }
 
+    public StudentDTO getStudentById(Long id) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        return convertDTO(student);
+    }
+
     private StudentDTO convertDTO(Student student) {
         StudentDTO studentDTO = new StudentDTO();
         studentDTO.setId(student.getId());

@@ -1,12 +1,33 @@
 import React, { useState, useMemo } from 'react';
-import { scheduleService } from '../services/api';
+import { scheduleService, feedbackService, availabilityService, studentService } from '../services/api';
 import styles from './Schedule.module.css';
+
+// Simple Modal Component
+const Modal = ({ isOpen, onClose, title, children }) => {
+    if (!isOpen) return null;
+    return (
+        <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+                <div className={styles.modalHeader}>
+                    <h3>{title}</h3>
+                    <button onClick={onClose} className={styles.closeButton}>×</button>
+                </div>
+                <div className={styles.modalBody}>{children}</div>
+            </div>
+        </div>
+    );
+};
 
 const Schedule = () => {
     const [schedule, setSchedule] = useState([]);
     const [availabilities, setAvailabilities] = useState([]);
     const [student, setStudent] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Feedback Modal State
+    const [selectedSession, setSelectedSession] = useState(null);
+    const [isdataModalOpen, setIsModalOpen] = useState(false);
+    const [feedbackData, setFeedbackData] = useState({ actualDuration: '', comprehension: 5 });
 
     // Hardcoded logic for demo purposes if not found in student
     // Assuming user might not have set sleep explicitly, default to 7 hours
@@ -34,6 +55,31 @@ const Schedule = () => {
             console.error('Error loading schedule data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSessionClick = (block) => {
+        if (block.type !== 'study') return;
+
+        // Only allow feedback for past blocks or current
+        // For demo: allow all
+        setSelectedSession(block);
+        setFeedbackData({ actualDuration: '', comprehension: 5 }); // Reset
+        setIsModalOpen(true);
+    };
+
+    const handleSubmitFeedback = async (e) => {
+        e.preventDefault();
+        try {
+            await feedbackService.submit(selectedSession.id, {
+                actualDurationMinutes: parseInt(feedbackData.actualDuration) || 30,
+                comprehensionRating: parseInt(feedbackData.comprehension)
+            });
+            setIsModalOpen(false);
+            alert('Feedback submitted! The AI will learn from this.');
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Failed to submit feedback');
         }
     };
 
@@ -273,6 +319,7 @@ const Schedule = () => {
                                             className={`${styles.sessionBlock} ${getBlockColorClass(block)}`}
                                             style={getSessionStyle(block)}
                                             title={`${block.title} (${new Date(block.startTime).toLocaleTimeString()} - ${new Date(block.endTime).toLocaleTimeString()})`}
+                                            onClick={() => handleSessionClick(block)}
                                         >
                                             <div className={styles.sessionTitle}>{block.title}</div>
                                             <div className={styles.sessionTime}>
@@ -287,6 +334,59 @@ const Schedule = () => {
                     </div>
                 </div>
             )}
+
+            {/* Feedback Modal */}
+            <Modal
+                isOpen={isdataModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title="Session Feedback"
+            >
+                <form onSubmit={handleSubmitFeedback} className={styles.feedbackForm}>
+                    <p style={{ marginBottom: '1rem' }}>How did <strong>{selectedSession?.title}</strong> go?</p>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Actual Duration (minutes)</label>
+                        <input
+                            type="number"
+                            className="input-field"
+                            value={feedbackData.actualDuration}
+                            onChange={e => setFeedbackData({ ...feedbackData, actualDuration: e.target.value })}
+                            placeholder="e.g. 60"
+                            required
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Comprehension (1-5)</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[1, 2, 3, 4, 5].map(rating => (
+                                <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => setFeedbackData({ ...feedbackData, comprehension: rating })}
+                                    className={`btn-secondary ${feedbackData.comprehension === rating ? styles.activeRating : ''}`}
+                                    style={{
+                                        backgroundColor: feedbackData.comprehension === rating ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)',
+                                        border: 'none',
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        color: 'white',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {rating}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>Cancel</button>
+                        <button type="submit" className="btn-primary">Submit Feedback</button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };

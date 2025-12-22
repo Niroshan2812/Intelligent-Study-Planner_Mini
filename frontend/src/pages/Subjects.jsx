@@ -8,6 +8,7 @@ const Subjects = () => {
         name: '',
         difficaltyLevel: 1,
         currentScore: 0,
+        preferredTimeOfDay: 'ANY',
     });
     const studentId = localStorage.getItem('studentId');
 
@@ -28,7 +29,7 @@ const Subjects = () => {
         e.preventDefault();
         try {
             await subjectService.create({ ...formData, studentId });
-            setFormData({ name: '', difficaltyLevel: 1, currentScore: 0 });
+            setFormData({ name: '', difficaltyLevel: 1, currentScore: 0, preferredTimeOfDay: 'ANY' });
             loadSubjects();
         } catch (error) {
             console.error('Error creating subject:', error);
@@ -75,6 +76,20 @@ const Subjects = () => {
                                 required
                             />
                         </div>
+                        <div className={styles.formGroup}>
+                            <label>Preferred Time</label>
+                            <select
+                                className="input-field"
+                                value={formData.preferredTimeOfDay}
+                                onChange={(e) => setFormData({ ...formData, preferredTimeOfDay: e.target.value })}
+                            >
+                                <option value="ANY">Any Time</option>
+                                <option value="MORNING">Morning (5 AM - 12 PM)</option>
+                                <option value="AFTERNOON">Afternoon (12 PM - 5 PM)</option>
+                                <option value="EVENING">Evening (5 PM - 9 PM)</option>
+                                <option value="NIGHT">Night (9 PM - 5 AM)</option>
+                            </select>
+                        </div>
                         <button type="submit" className="btn-primary">Add Subject</button>
                     </form>
                 </div>
@@ -83,11 +98,12 @@ const Subjects = () => {
                     <h3 className={styles.cardTitle}>Your Subjects</h3>
                     <div className={styles.list}>
                         {subjects.map((subject) => (
-                            <div key={subject.id} className={styles.listItem}>
+                            <div key={subject.subject_id || subject.id} className={styles.listItem}>
                                 <div className={styles.itemName}>{subject.name}</div>
                                 <div className={styles.itemDetails}>
                                     <span>Difficulty: {subject.difficaltyLevel}</span>
                                     <span>Score: {subject.currentScore}</span>
+                                    <span>Pref: {subject.preferredTimeOfDay}</span>
                                 </div>
                             </div>
                         ))}

@@ -34,4 +34,8 @@ export const scheduleService = {
     generate: (studentId) => api.post(`/schedule/generate/${studentId}`),
 };
 
+export const feedbackService = {
+    submit: (sessionId, data) => api.post(`/feedback/${sessionId}`, data),
+};
+
 export default api;

@@ -51,7 +51,7 @@ public class ScheduleService {
                 List<Availability> availabilities = availabilityRepository.findByStudentId(studentId);
                 System.out.println("Found " + availabilities.size() + " availability slots for student " + studentId);
 
-                // 1. Predict hours for all exams
+                //Predict hours for all exams
                 Map<Long, Float> predictedHoursMap = new HashMap<>();
                 for (Exam exam : upcomingExams) {
                         Subject subject = exam.getSubject();
@@ -70,7 +70,7 @@ public class ScheduleService {
                         predictedHoursMap.put(subject.getSubject_id(), predictedHours);
                 }
 
-                // 2. Use Choco-Solver to generate schedule
+                //Use Choco-Solver to generate schedule
                 List<StudySession> newSessions = constraintService.generateSchedule(upcomingExams, availabilities,
                                 predictedHoursMap);
 

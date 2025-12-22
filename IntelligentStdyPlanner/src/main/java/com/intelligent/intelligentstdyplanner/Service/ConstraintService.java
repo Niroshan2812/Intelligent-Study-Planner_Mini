@@ -32,9 +32,24 @@ public class ConstraintService {
 
     public List<StudySession> generateSchedule(List<Exam> exams, List<Availability> availabilities,
             Map<Long, Float> predictedHours) {
+        // preferences enforced
+        System.out.println("Attempting to schedule WITH user preferences...");
+        List<StudySession> sessions = generateScheduleInternal(exams, availabilities, predictedHours, true);
+
+        if (!sessions.isEmpty()) {
+            return sessions;
+        }
+
+        // if fail
+        System.out.println("Could not satisfy preferences. Falling back to flexible schedule.");
+        return generateScheduleInternal(exams, availabilities, predictedHours, false);
+    }
+
+    private List<StudySession> generateScheduleInternal(List<Exam> exams, List<Availability> availabilities,
+            Map<Long, Float> predictedHours, boolean enforcePreferences) {
         Model model = new Model("Study Schedule");
 
-        // Start from now - round is set as 30 min
+        // round is set as 30 min
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime scheduleStart = roundToNextSlot(now);
 
@@ -44,23 +59,25 @@ public class ConstraintService {
                 .max(LocalDateTime::compareTo)
                 .orElse(now.plusDays(7));
 
-        // Calculate total slots in horizon
+        // Calculate total slots
         long totalSlots = Duration.between(scheduleStart, maxDeadline).toMinutes() / SLOT_MINUTES;
         if (totalSlots <= 0)
             return Collections.emptyList();
         // System.out.println("Total slots: " + totalSlots);
-        // Cap horizon to avoid performance issues (e.g., 30 days)
+        // calculate total slots, 720 * 2 = 1440
         int horizon = (int) Math.min(totalSlots, 30 * 24 * 2);
 
         // 2. Pre-process Availability
         /*
-         * Map availability to valid start
-         * A slot index 'i' corresponds to time: scheduleStart + i * 30mins
+         *cREATE BITSET -- long array contain 0 and 1
+         * Set all are 0 as start
          */
         BitSet availableSlots = new BitSet(horizon);
-
+        // iterate 0 to 1440
         for (int i = 0; i < horizon; i++) {
+            // create abstract index i --> i = 0 mean 8.00 am like wise 30 min slots
             LocalDateTime slotTime = scheduleStart.plusMinutes((long) i * SLOT_MINUTES);
+            // check student availability if yes -  flip 0 to 1
             if (isAvailable(slotTime, availabilities)) {
                 availableSlots.set(i);
             }
@@ -71,15 +88,18 @@ public class ConstraintService {
         List<Subject> taskSubjects = new ArrayList<>();
 
         for (Exam exam : exams) {
+            // take predicted hours from model
             Subject subject = exam.getSubject();
             float hoursNeeded = predictedHours.getOrDefault(subject.getSubject_id(), 0f);
             if (hoursNeeded <= 0)
                 continue;
 
-            // Convert hours to slots
+            // Convert hours to slots 30 min one
             int slotsNeeded = (int) Math.ceil(hoursNeeded * 60 / SLOT_MINUTES);
 
-            // Split into chunks if too large?
+            // if its 10 hr we can t allocate hence,
+            // Split into chunks if too large--------------------------------------------
+            // set max as a 2 hr set
             int maxChunkSize = 4;
             int remainingSlots = slotsNeeded;
 
@@ -87,30 +107,39 @@ public class ConstraintService {
             while (remainingSlots > 0) {
                 int studyDuration = Math.min(remainingSlots, maxChunkSize);
                 // Add 1 slot (30 mins) for break/buffer
+                // need to allocate 30min brake after every session
                 int totalDuration = studyDuration + 1;
 
-                // Create Task Variable
+                // Create Task  variable values needs dynamic
                 // set start time domain- [0, horizon - totalDuration]
                 IntVar start = model.intVar("start_" + subject.getName() + "_" + chunkIndex, 0,
                         horizon - totalDuration);
                 IntVar end = model.intVar("end_" + subject.getName() + "_" + chunkIndex, 0, horizon);
-                IntVar dur = model.intVar(totalDuration); // Fixed duration with break
-
+                // fix now set duration with break
+                IntVar dur = model.intVar(totalDuration);
+                // pckge this 3 into choco-solver
                 Task task = new Task(start, dur, end);
                 chocoTasks.add(task);
                 taskSubjects.add(subject);
 
-                int[] validStarts = getValidStartIndices(availableSlots, horizon, totalDuration);
+                // Apply Preference Mask if needed
+                BitSet effectiveSlots = (BitSet) availableSlots.clone();
+                if (enforcePreferences && subject.getPreferredTimeOfDay() != null &&
+                        subject.getPreferredTimeOfDay() != com.intelligent.intelligentstdyplanner.Model.TimePreference.ANY) {
+                    maskSlotsWithPreference(effectiveSlots, scheduleStart, horizon, subject.getPreferredTimeOfDay());
+                }
+
+                // check bitset to find every srart time i when a block of totalDuration
+                // if class stat 9 so solver cant pick 9 as start time
+                int[] validStarts = getValidStartIndices(effectiveSlots, horizon, totalDuration);
                 if (validStarts.length == 0) {
                     System.out.println("No valid slots found for " + subject.getName() + " chunk " + chunkIndex);
-                    // Critical: If we can't schedule a required chunk, we probably should abort or
-                    // log error
                     // For now, proceeding but this task implies constraint failure if not solvable
                 } else {
                     model.member(start, validStarts).post();
                 }
 
-                // Task must be before deadline
+                // study session need to finished must be before deadline
                 long deadlineSlots = Duration.between(scheduleStart, exam.getDeadline()).toMinutes() / SLOT_MINUTES;
                 model.arithm(end, "<=", (int) deadlineSlots).post();
 
@@ -118,22 +147,24 @@ public class ConstraintService {
                 chunkIndex++;
             }
         }
-
+        // if exam is no or no hr need
         if (chocoTasks.isEmpty())
             return Collections.emptyList();
 
         // No Overlap
         Task[] tasksArray = chocoTasks.toArray(new Task[0]);
-        // Use cumulative for this, or specific disjunctive
-
+        // Use cumulative for this
         IntVar[] heights = new IntVar[chocoTasks.size()];
+        // recource usage,
         for (int i = 0; i < chocoTasks.size(); i++)
             heights[i] = model.intVar(1);
+        // one user cna handle 1 task at a time
         IntVar capacity = model.intVar(1);
-
+        // height of all the activity not exceed the capacity
         model.cumulative(tasksArray, heights, capacity).post();
 
         // Solve
+        // filtering and check all the rules
         Solver solver = model.getSolver();
         if (solver.solve()) {
             // Extract solution
@@ -237,5 +268,34 @@ public class ConstraintService {
         }
         merged.add(current);
         return merged;
+    }
+
+    private void maskSlotsWithPreference(BitSet slots, LocalDateTime start, int horizon,
+            com.intelligent.intelligentstdyplanner.Model.TimePreference pref) {
+        for (int i = 0; i < horizon; i++) {
+            if (slots.get(i)) {
+                LocalDateTime slotTime = start.plusMinutes((long) i * SLOT_MINUTES);
+                if (!isPreferredTime(slotTime, pref)) {
+                    slots.clear(i);
+                }
+            }
+        }
+    }
+
+    private boolean isPreferredTime(LocalDateTime time,
+            com.intelligent.intelligentstdyplanner.Model.TimePreference pref) {
+        int hour = time.getHour();
+        switch (pref) {
+            case MORNING:
+                return hour >= 5 && hour < 12;
+            case AFTERNOON:
+                return hour >= 12 && hour < 17;
+            case EVENING:
+                return hour >= 17 && hour < 21;
+            case NIGHT:
+                return hour >= 21 || hour < 5;
+            default:
+                return true;
+        }
     }
 }

@@ -7,13 +7,18 @@ VALUES
     ('Sithara',  4.7, 7, 2.0, 'Bio Science',       'Galle',   6.8, 'Visual'),
     ('Dilshan',  2.8, 3, 4.0, 'Arts',             'Matara',  5.5, 'Text');
 
-INSERT INTO subjects (name, difficalty_level, current_score, student_id)
+INSERT INTO subjects (name, difficalty_level, current_score, student_id, preferred_time_of_day)
 VALUES
-    ('Mathematics', 4, 78.5, 1),
-    ('Physics', 5, 65.0, 1),
-    ('ICT', 3, 82.0, 2),
-    ('Accounting', 4, 70.0, 3),
-    ('Biology', 5, 60.0, 4);
+    ('Mathematics', 4, 78.5, 1, 'MORNING'),
+    ('Physics', 5, 65.0, 1, 'EVENING'),
+    ('ICT', 3, 82.0, 2, 'ANY'),
+    ('Accounting', 4, 70.0, 3, 'AFTERNOON'),
+    ('Biology', 5, 60.0, 4, 'NIGHT');
+
+INSERT INTO student_subject_stats (efficiency_factor, total_sessions_completed, student_id, subject_id)
+VALUES
+    (1.2, 5, 1, 1), -- Kamal is 20% slower in Math
+    (0.9, 3, 1, 2); -- Kamal is 10% faster in Physics
 
 -- Removed hardcoded study_sessions to verify dynamic scheduling and avoid conflicts
 

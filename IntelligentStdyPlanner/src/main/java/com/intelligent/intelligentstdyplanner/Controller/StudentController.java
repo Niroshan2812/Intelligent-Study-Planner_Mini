@@ -13,24 +13,27 @@ import java.util.List;
 @RequestMapping("/api/students")
 public class StudentController {
 
-    private final StudentSearvice  studentSearvice;
+    private final StudentSearvice studentSearvice;
 
     public StudentController(StudentSearvice studentSearvice) {
         this.studentSearvice = studentSearvice;
     }
 
-
     @PostMapping
     public ResponseEntity<StudentDTO> createStudent(@RequestBody StudentDTO dto) {
-       return ResponseEntity.ok(studentSearvice.createNewStudent(dto));
+        return ResponseEntity.ok(studentSearvice.createNewStudent(dto));
     }
 
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAllStudents(){
+    public ResponseEntity<List<StudentDTO>> getAllStudents() {
         return ResponseEntity.ok(studentSearvice.getAllStudents());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<StudentDTO> getStudentById(@PathVariable Long id) {
+        return ResponseEntity.ok(studentSearvice.getStudentById(id));
     }
 
     // convert into DTO
 
 }
-

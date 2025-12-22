@@ -89,7 +89,7 @@ public class PredictionService {
                                 basePrediction = output[0][0];
                         }
 
-                        // --- Post-Processing Heuristics ---
+                        // Post-Processing ---------------------------------------------------
                         float multiplier = 1.0f;
 
                         // Sleep Logic: < 6h -> +20% (Low efficiency), > 8h -> -10% (High efficiency)
@@ -105,8 +105,23 @@ public class PredictionService {
                                 }
                         }
 
-                        // Learning Style Logic (Future placeholder)
-                        // if (learningStyle.equalsIgnoreCase("Visual")) { ... }
+                        // Learning Style Logic
+                        // Synergy between Learning Style and Stream
+                        if (learningStyle != null && stream != null) {
+                                if (learningStyle.equalsIgnoreCase("Visual") &&
+                                                (stream.contains("Science") || stream.contains("Technology"))) {
+                                        multiplier -= 0.10f; // 10% faster for Visual learners in Science/Tech
+                                        System.out.println("Adjusting prediction: Visual + Science Synergy (-10%)");
+                                } else if (learningStyle.equalsIgnoreCase("Text") &&
+                                                (stream.contains("Arts") || stream.contains("Commerce"))) {
+                                        multiplier -= 0.10f; // 10% faster for Text learners in Arts/Commerce
+                                        System.out.println("Adjusting prediction: Text + Arts/Commerce Synergy (-10%)");
+                                } else if (learningStyle.equalsIgnoreCase("Auditory")) {
+                                        multiplier -= 0.05f; // General 5% boost for auditory (assuming
+                                                             // lectures/discussion)
+                                        System.out.println("Adjusting prediction: Auditory General Bonus (-5%)");
+                                }
+                        }
 
                         return basePrediction * multiplier;
 
@@ -116,4 +131,36 @@ public class PredictionService {
                         return 2.0f; // Fallback
                 }
         }
+
+        // Overloaded method to include student/subject context for learning
+        public float predictStudyHours(com.intelligent.intelligentstdyplanner.Model.Student student,
+                        com.intelligent.intelligentstdyplanner.Model.Subject subject) {
+                float base = predictStudyHours(
+                                student.getStream(),
+                                student.getDistrict(),
+                                subject.getDifficaltyLevel(),
+                                (float) subject.getCurrentScore(),
+                                student.getEnglishFluency(),
+                                student.getTuitionHoursWeekly(),
+                                student.getCommuteFatigue(),
+                                student.getAverageSleepHours(),
+                                student.getLearningStyle());
+
+                // Apply Learning Factor
+                if (statsRepository != null) {
+                        java.util.Optional<com.intelligent.intelligentstdyplanner.Model.StudentSubjectStats> statsOpt = statsRepository
+                                        .findByStudentAndSubject(student.getId(), subject.getSubject_id());
+
+                        if (statsOpt.isPresent()) {
+                                float factor = (float) statsOpt.get().getEfficiencyFactor();
+                                System.out.println("Applying Personal Efficiency Factor: " + factor);
+                                base *= factor;
+                        }
+                }
+
+                return base;
+        }
+
+        @org.springframework.beans.factory.annotation.Autowired
+        private com.intelligent.intelligentstdyplanner.Repository.StudentSubjectStatsRepository statsRepository;
 }
